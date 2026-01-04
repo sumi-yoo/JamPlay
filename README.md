@@ -37,7 +37,7 @@
 | 구분                     | 내용                                                                 |
 |-------------------------|----------------------------------------------------------------------|
 | **언어**                 | Kotlin                                                              |
-| **프레임워크 / UI**        | Android SDK, Jetpack Compose, Material3, ViewBinding, Navigation Compose, SwipeRefresh, Accompanist SystemUI |
+| **프레임워크 / UI**        | Android SDK, Jetpack Compose, Material3, Navigation Compose, SwipeRefresh, Accompanist SystemUI |
 | **의존성 주입**           | Hilt (Dagger)                                                        |
 | **스트리밍 재생**          | ExoPlayer, Media3 UI                                                 |
 | **네트워크 통신**         | Retrofit, Gson (JSON 컨버터)                                         |

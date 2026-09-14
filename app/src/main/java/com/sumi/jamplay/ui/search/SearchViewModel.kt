@@ -7,7 +7,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.paging.PagingData
 import androidx.paging.cachedIn
-import com.sumi.jamplay.data.model.Track
+import com.sumi.jamplay.domain.model.Track
 import com.sumi.jamplay.data.datastore.SearchPreferencesDataStore
 import com.sumi.jamplay.domain.repository.TrackRepository
 import dagger.hilt.android.lifecycle.HiltViewModel

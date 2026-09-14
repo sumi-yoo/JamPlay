@@ -1,9 +1,5 @@
-package com.sumi.jamplay.data.model
+package com.sumi.jamplay.domain.model
 
-import android.os.Parcelable
-import kotlinx.parcelize.Parcelize
-
-@Parcelize
 data class Track(
     val id: Long,
     val name: String,
@@ -11,4 +7,4 @@ data class Track(
     val albumName: String?,
     val artworkUrl: String?,
     val streamUrl: String
-) : Parcelable
+)

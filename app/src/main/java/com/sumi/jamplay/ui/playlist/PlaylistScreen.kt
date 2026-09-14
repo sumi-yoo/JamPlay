@@ -53,7 +53,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import coil.compose.AsyncImage
 import com.sumi.jamplay.R
-import com.sumi.jamplay.data.model.Playlist
+import com.sumi.jamplay.domain.model.Playlist
 
 @Composable
 fun PlaylistScreen(

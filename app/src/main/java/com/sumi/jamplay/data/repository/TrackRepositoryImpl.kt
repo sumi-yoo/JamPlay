@@ -3,7 +3,7 @@ package com.sumi.jamplay.data.repository
 import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import androidx.paging.PagingData
-import com.sumi.jamplay.data.model.Track
+import com.sumi.jamplay.domain.model.Track
 import com.sumi.jamplay.data.datasource.JamendoRemoteDataSource
 import com.sumi.jamplay.data.paging.JamendoPagingSource
 import com.sumi.jamplay.domain.repository.TrackRepository

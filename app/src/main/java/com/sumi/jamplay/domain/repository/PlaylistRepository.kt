@@ -1,7 +1,7 @@
 package com.sumi.jamplay.domain.repository
 
-import com.sumi.jamplay.data.model.Playlist
-import com.sumi.jamplay.data.model.Track
+import com.sumi.jamplay.domain.model.Playlist
+import com.sumi.jamplay.domain.model.Track
 import kotlinx.coroutines.flow.Flow
 
 interface PlaylistRepository {

@@ -2,7 +2,7 @@ package com.sumi.jamplay.data.paging
 
 import androidx.paging.PagingSource
 import androidx.paging.PagingState
-import com.sumi.jamplay.data.model.Track
+import com.sumi.jamplay.domain.model.Track
 import com.sumi.jamplay.data.datasource.JamendoRemoteDataSource
 
 class JamendoPagingSource(

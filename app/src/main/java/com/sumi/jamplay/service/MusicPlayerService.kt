@@ -28,7 +28,7 @@ import coil.request.ImageRequest
 import com.sumi.jamplay.MainActivity
 import com.sumi.jamplay.R
 import com.sumi.jamplay.data.datastore.PlayerPreferencesDataStore
-import com.sumi.jamplay.data.model.Track
+import com.sumi.jamplay.domain.model.Track
 import com.sumi.jamplay.ui.player.CoilImageLoader
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope

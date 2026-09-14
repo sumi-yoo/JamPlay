@@ -66,7 +66,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.paging.LoadState
 import coil.compose.AsyncImage
-import com.sumi.jamplay.data.model.Track
+import com.sumi.jamplay.domain.model.Track
 import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.paging.compose.items
 import com.sumi.jamplay.R

@@ -3,8 +3,8 @@ package com.sumi.jamplay.data.repository
 import com.sumi.jamplay.data.db.PlaylistDao
 import com.sumi.jamplay.data.db.PlaylistEntity
 import com.sumi.jamplay.data.db.TrackEntity
-import com.sumi.jamplay.data.model.Playlist
-import com.sumi.jamplay.data.model.Track
+import com.sumi.jamplay.domain.model.Playlist
+import com.sumi.jamplay.domain.model.Track
 import com.sumi.jamplay.domain.repository.PlaylistRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map

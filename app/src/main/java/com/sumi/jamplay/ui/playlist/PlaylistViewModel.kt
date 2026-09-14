@@ -6,8 +6,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.sumi.jamplay.data.model.Playlist
-import com.sumi.jamplay.data.model.Track
+import com.sumi.jamplay.domain.model.Playlist
+import com.sumi.jamplay.domain.model.Track
 import com.sumi.jamplay.domain.repository.PlaylistRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi

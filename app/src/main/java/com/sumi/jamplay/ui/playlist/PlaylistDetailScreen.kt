@@ -57,7 +57,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import coil.compose.AsyncImage
 import com.sumi.jamplay.R
-import com.sumi.jamplay.data.model.Track
+import com.sumi.jamplay.domain.model.Track
 import com.sumi.jamplay.ui.player.MiniPlayerScreen
 import com.sumi.jamplay.ui.player.PlayingWave
 import com.sumi.jamplay.ui.player.PlayerViewModel

@@ -1,4 +1,4 @@
-package com.sumi.jamplay.data.model
+package com.sumi.jamplay.domain.model
 
 data class Playlist(
     val id: Long,

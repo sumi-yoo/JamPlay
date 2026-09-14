@@ -8,7 +8,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.paging.PagingData
 import androidx.paging.cachedIn
 import com.sumi.jamplay.domain.model.Track
-import com.sumi.jamplay.data.datastore.SearchPreferencesDataStore
+import com.sumi.jamplay.domain.repository.SearchHistoryRepository
 import com.sumi.jamplay.domain.repository.TrackRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -26,7 +26,7 @@ import javax.inject.Inject
 @HiltViewModel
 class SearchViewViewModel @Inject constructor(
     private val repository: TrackRepository,
-    private val searchDataStore: SearchPreferencesDataStore
+    private val searchHistoryRepository: SearchHistoryRepository
 ) : ViewModel() {
 
     // 입력 중인 텍스트 상태
@@ -47,7 +47,7 @@ class SearchViewViewModel @Inject constructor(
         .cachedIn(viewModelScope)
 
     val recentSearches: StateFlow<List<String>> =
-        searchDataStore.recentSearches.stateIn(
+        searchHistoryRepository.recentSearches.stateIn(
             viewModelScope,
             SharingStarted.Lazily,
             emptyList()
@@ -70,7 +70,7 @@ class SearchViewViewModel @Inject constructor(
     fun search() {
         viewModelScope.launch {
             _query.emit(_text.value)
-            if (_text.value.isNotEmpty()) searchDataStore.addSearch(_text.value)
+            if (_text.value.isNotEmpty()) searchHistoryRepository.addSearch(_text.value)
         }
     }
 

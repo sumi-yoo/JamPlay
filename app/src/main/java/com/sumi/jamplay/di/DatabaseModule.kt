@@ -32,7 +32,7 @@ object DatabaseModule {
                     val name = context.getString(R.string.favorites_playlist_name)
                     val id = name.hashCode().toLong()
                     // DB가 처음 생성될 때 딱 한 번 실행됨
-                    db.execSQL("INSERT INTO playlists (id, name) VALUES ($id, '$name')")
+                    db.execSQL("INSERT INTO playlists (id, name) VALUES (?, ?)", arrayOf(id, name))
                 }
             })
             .build()

@@ -18,7 +18,7 @@ class JamendoPagingSource(
         val page = params.key ?: 1  // 첫 페이지 1부터 시작
         val perPage = params.loadSize
         // offset 계산: 첫 페이지 0, 두 번째 페이지 60, 세 번째 페이지 90, ...
-        val offset = if (page == 1) 0 else 60 + (page - 1) * 30
+        val offset = if (page == 1) 0 else 60 + (page - 2) * 30
         var attempt = 0
         var tracks: List<Track> = emptyList()
 

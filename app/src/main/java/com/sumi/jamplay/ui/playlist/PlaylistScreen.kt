@@ -331,7 +331,7 @@ fun CreatePlaylistDialog(
                         Text(stringResource(R.string.cancel), color = Color.White.copy(alpha = 0.7f))
                     }
 
-                    val exists = existingNames.any { it.equals(name.trim(), ignoreCase = true) }
+                    val exists = existingNames.any { it.trim() == name.trim() }
 
                     TextButton(
                         onClick = {

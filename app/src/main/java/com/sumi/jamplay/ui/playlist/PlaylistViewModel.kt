@@ -22,6 +22,7 @@ import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
+import java.util.UUID
 import javax.inject.Inject
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -96,6 +97,18 @@ class PlaylistViewModel @Inject constructor(
         return playlists.value.firstOrNull { it.id == playlistId }?.tracks?.any { it.id == trackId } == true
     }
 
+    fun savePlaylistSelection(track: Track) {
+        val (selected, unselected) = selectedPlaylists.toMap().entries.partition { it.value }
+
+        selected.forEach { (playlistId, _) ->
+            addTrackToPlaylist(playlistId, track)
+        }
+
+        unselected.forEach { (playlistId, _) ->
+            deleteTrackFromPlaylist(playlistId, track)
+        }
+    }
+
     fun addTrackToPlaylist(playlistId: Long, track: Track) {
         viewModelScope.launch {
             repository.addTrackToPlaylist(playlistId, track)
@@ -104,7 +117,7 @@ class PlaylistViewModel @Inject constructor(
 
     fun addPlaylist(name: String) {
         val trimmedName = name.trim()
-        val playlistId = trimmedName.hashCode().toLong()
+        val playlistId = UUID.randomUUID().mostSignificantBits
         viewModelScope.launch {
             repository.addPlaylist(Playlist(id = playlistId, name = trimmedName))
         }
@@ -166,12 +179,10 @@ class PlaylistViewModel @Inject constructor(
         _playlistId.value = id
     }
 
-    fun renamePlaylist(newName: String, tracks: List<Track>) {
+    fun renamePlaylist(newName: String) {
         _playlistId.value?.let {
             viewModelScope.launch {
-                repository.renamePlaylistWithTracks(it, newName, tracks)
-                val newId = newName.trim().hashCode().toLong()
-                setPlaylistId(newId)
+                repository.renamePlaylist(it, newName)
             }
         }
     }

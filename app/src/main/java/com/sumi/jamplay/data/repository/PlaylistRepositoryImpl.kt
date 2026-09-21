@@ -59,12 +59,7 @@ class PlaylistRepositoryImpl @Inject constructor(
 
     // 플레이리스트 추가
     override suspend fun addPlaylist(playlist: Playlist) {
-        dao.insertPlaylist(
-            PlaylistEntity(
-                id = playlist.id,
-                name = playlist.name
-            )
-        )
+        dao.insertPlaylistIfNameAvailable(PlaylistEntity(id = playlist.id, name = playlist.name))
     }
 
     // 트랙 추가
@@ -103,25 +98,7 @@ class PlaylistRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun renamePlaylistWithTracks(
-        oldId: Long,
-        newName: String,
-        tracks: List<Track>
-    ) {
-        val newId = newName.trim().hashCode().toLong()
-        val newEntity = PlaylistEntity(id = newId, name = newName.trim())
-
-        val trackEntities = tracks.map {
-            TrackEntity(
-                id = it.id,
-                name = it.name,
-                artistName = it.artistName,
-                albumName = it.albumName,
-                artworkUrl = it.artworkUrl,
-                streamUrl = it.streamUrl
-            )
-        }
-
-        dao.renamePlaylistWithTracks(oldId, newEntity, trackEntities)
+    override suspend fun renamePlaylist(playlistId: Long, newName: String) {
+        dao.renamePlaylistIfNameAvailable(playlistId, newName)
     }
 }

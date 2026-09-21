@@ -26,6 +26,29 @@ interface PlaylistDao {
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertPlaylist(playlist: PlaylistEntity)
 
+    @Query("SELECT * FROM playlists")
+    suspend fun getPlaylistEntities(): List<PlaylistEntity>
+
+    @Transaction
+    suspend fun insertPlaylistIfNameAvailable(playlist: PlaylistEntity) {
+        val name = playlist.name.trim()
+        if (name.isBlank() || getPlaylistEntities().any {
+                it.name.trim() == name
+            }) return
+
+        insertPlaylist(playlist.copy(name = name))
+    }
+
+    @Transaction
+    suspend fun renamePlaylistIfNameAvailable(playlistId: Long, newName: String) {
+        val name = newName.trim()
+        if (name.isBlank() || getPlaylistEntities().any {
+                it.id != playlistId && it.name.trim() == name
+            }) return
+
+        renamePlaylist(playlistId, name)
+    }
+
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertTrack(track: TrackEntity)
 
@@ -67,28 +90,6 @@ interface PlaylistDao {
     """)
     fun getTracksOfPlaylist(playlistId: Long): Flow<List<TrackEntity>>
 
-    // 플레이리스트 이름 변경 (삭제 → 추가 → 트랙 재등록) 트랜잭션
-    @Transaction
-    suspend fun renamePlaylistWithTracks(
-        oldId: Long,
-        newPlaylist: PlaylistEntity,
-        tracks: List<TrackEntity>
-    ) {
-        // 기존 플레이리스트 삭제
-        deletePlaylist(oldId)
-
-        // 새 플레이리스트 추가
-        insertPlaylist(newPlaylist)
-
-        // 트랙 관계 재등록
-        tracks.forEach { track ->
-            insertTrack(track)
-            insertPlaylistTrackCrossRef(
-                PlaylistTrackCrossRef(
-                    playlistId = newPlaylist.id,
-                    trackId = track.id
-                )
-            )
-        }
-    }
+    @Query("UPDATE playlists SET name = :newName WHERE id = :playlistId")
+    suspend fun renamePlaylist(playlistId: Long, newName: String)
 }

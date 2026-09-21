@@ -335,7 +335,7 @@ fun PlaylistDetailScreen(
             initialName = playlist?.name ?: "",
             existingNames = playlists.map { it.name },
             onConfirm = { newName ->
-                playlistViewModel.renamePlaylist(newName, tracks)
+                playlistViewModel.renamePlaylist(newName)
             },
             onDismiss = {
                 playlistViewModel.updateShowCreateDialog(false)

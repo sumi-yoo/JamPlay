@@ -103,17 +103,7 @@ fun PlaylistSelectScreen(
 
             TextButton(onClick = {
                 currentTrack?.let { track ->
-                    val (selected, unselected) = playlistViewModel.selectedPlaylists.entries.partition { it.value }
-
-                    // 체크된 플레이리스트 → 추가
-                    selected.forEach { (playlistId, _) ->
-                        playlistViewModel.addTrackToPlaylist(playlistId, track)
-                    }
-
-                    // 체크 해제된 플레이리스트 → 삭제
-                    unselected.forEach { (playlistId, _) ->
-                        playlistViewModel.deleteTrackFromPlaylist(playlistId, track)
-                    }
+                    playlistViewModel.savePlaylistSelection(track)
                 }
                 onBack()
                 playlistViewModel.clearSelectedPlaylists()

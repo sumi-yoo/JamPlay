@@ -3,11 +3,14 @@ package com.sumi.jamplay.data.repository
 import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import androidx.paging.PagingData
+import androidx.paging.map
+import com.sumi.jamplay.data.mapper.toDomain
 import com.sumi.jamplay.domain.model.Track
 import com.sumi.jamplay.data.datasource.JamendoRemoteDataSource
 import com.sumi.jamplay.data.paging.JamendoPagingSource
 import com.sumi.jamplay.domain.repository.TrackRepository
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 
 class TrackRepositoryImpl @Inject constructor(
@@ -18,6 +21,8 @@ class TrackRepositoryImpl @Inject constructor(
         return Pager(
             config = PagingConfig(pageSize = 30, prefetchDistance = 10, initialLoadSize = 60),
             pagingSourceFactory = { JamendoPagingSource(remoteDataSource, query) }
-        ).flow
+        ).flow.map { pagingData ->
+            pagingData.map { it.toDomain() }
+        }
     }
 }

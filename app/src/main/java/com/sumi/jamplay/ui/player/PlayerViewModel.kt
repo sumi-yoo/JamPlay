@@ -7,14 +7,14 @@ import androidx.lifecycle.viewModelScope
 import androidx.media3.common.util.UnstableApi
 import com.sumi.jamplay.domain.model.Track
 import com.sumi.jamplay.service.MusicPlayerService
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
-@kotlin.OptIn(ExperimentalCoroutinesApi::class)
 class PlayerViewModel : ViewModel() {
 
     private val _currentTrack = MutableStateFlow<Track?>(null)
@@ -41,8 +41,10 @@ class PlayerViewModel : ViewModel() {
     private val _lightVibrantColor = MutableStateFlow(Color(0xFF3E3E3E))
     val lightVibrantColor: StateFlow<Color> = _lightVibrantColor.asStateFlow()
 
-    val playerCommand = MutableSharedFlow<PlayerCommand>(replay = 1)
-    private var isBound = false
+    private val commandChannel = Channel<PlayerCommand>(Channel.BUFFERED)
+    val playerCommand = commandChannel.receiveAsFlow()
+    private var boundService: MusicPlayerService? = null
+    private var serviceStateJob: Job? = null
 
     sealed class PlayerCommand {
         data class Play(val track: Track, val tracks: List<Track>) : PlayerCommand()
@@ -56,69 +58,82 @@ class PlayerViewModel : ViewModel() {
 
     @OptIn(UnstableApi::class)
     fun bindService(service: MusicPlayerService) {
-        if (isBound) return
-        isBound = true
+        if (boundService === service && serviceStateJob?.isActive == true) return
+        unbindService()
+        boundService = service
+        serviceStateJob = viewModelScope.launch {
+            // 서비스 상태를 그대로 구독
+            launch {
+                service.currentTrack.collect { _currentTrack.value = it }
+            }
+            launch {
+                service.isPlaying.collect { _isPlaying.value = it }
+            }
+            launch {
+                service.isShuffleMode.collect { _isShuffleMode.value = it }
+            }
+            launch {
+                service.repeatMode.collect { _repeatMode.value = it }
+            }
+            launch {
+                service.currentPosition.collect { _currentPosition.value = it }
+            }
+            launch {
+                service.duration.collect { _duration.value = it }
+            }
+            launch {
+                service.vibrantColor.collect { _vibrantColor.value = it }
+            }
+            launch {
+                service.lightVibrantColor.collect { _lightVibrantColor.value = it }
+            }
+        }
+    }
 
-        // 서비스 상태를 그대로 구독
-        viewModelScope.launch {
-            service.currentTrack.collect { _currentTrack.value = it }
-        }
-        viewModelScope.launch {
-            service.isPlaying.collect { _isPlaying.value = it }
-        }
-        viewModelScope.launch {
-            service.isShuffleMode.collect { _isShuffleMode.value = it }
-        }
-        viewModelScope.launch {
-            service.repeatMode.collect { _repeatMode.value = it }
-        }
-        viewModelScope.launch {
-            service.currentPosition.collect { _currentPosition.value = it }
-        }
-        viewModelScope.launch {
-            service.duration.collect { _duration.value = it }
-        }
-        viewModelScope.launch {
-            service.vibrantColor.collect { _vibrantColor.value = it }
-        }
-        viewModelScope.launch {
-            service.lightVibrantColor.collect { _lightVibrantColor.value = it }
-        }
+    fun unbindService() {
+        serviceStateJob?.cancel()
+        serviceStateJob = null
+        boundService = null
     }
 
     fun play(track: Track, tracks: List<Track>) {
-        playerCommand.tryEmit(PlayerCommand.Play(track, tracks))
-        playerCommand.resetReplayCache()
+        sendCommand(PlayerCommand.Play(track, tracks))
     }
 
     fun togglePlayPause() {
-        playerCommand.tryEmit(PlayerCommand.TogglePlay)
-        playerCommand.resetReplayCache()
+        sendCommand(PlayerCommand.TogglePlay)
     }
 
     fun skipNext() {
-        playerCommand.tryEmit(PlayerCommand.SkipNext)
-        playerCommand.resetReplayCache()
+        sendCommand(PlayerCommand.SkipNext)
     }
 
     fun skipPrevious() {
-        playerCommand.tryEmit(PlayerCommand.SkipPrevious)
-        playerCommand.resetReplayCache()
+        sendCommand(PlayerCommand.SkipPrevious)
     }
 
     fun seekTo(position: Long) {
-        playerCommand.tryEmit(PlayerCommand.Seek(position))
-        playerCommand.resetReplayCache()
+        sendCommand(PlayerCommand.Seek(position))
     }
 
     fun toggleShuffle() {
-        playerCommand.tryEmit(PlayerCommand.ToggleShuffle)
-        playerCommand.resetReplayCache()
+        sendCommand(PlayerCommand.ToggleShuffle)
     }
 
     fun toggleRepeat() {
-        playerCommand.tryEmit(PlayerCommand.ToggleRepeat)
-        playerCommand.resetReplayCache()
+        sendCommand(PlayerCommand.ToggleRepeat)
+    }
+
+    private fun sendCommand(command: PlayerCommand) {
+        viewModelScope.launch {
+            commandChannel.send(command)
+        }
+    }
+
+    override fun onCleared() {
+        unbindService()
+        commandChannel.cancel()
+        super.onCleared()
     }
 
     fun updateVibrantColors(vibrant: Color, lightVibrant: Color) {

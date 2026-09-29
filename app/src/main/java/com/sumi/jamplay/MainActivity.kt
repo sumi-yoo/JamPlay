@@ -80,6 +80,7 @@ import com.sumi.jamplay.ui.search.SearchViewViewModel
 import com.sumi.jamplay.ui.theme.JamPlayBackground
 import com.sumi.jamplay.ui.theme.JamPlayTheme
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 
 @UnstableApi
@@ -88,6 +89,7 @@ class MainActivity : ComponentActivity() {
 
     private var musicService: MusicPlayerService? = null
     private var isBound = false
+    private var playerCommandJob: Job? = null
 
     private val playerViewModel: PlayerViewModel by viewModels()
 
@@ -101,7 +103,9 @@ class MainActivity : ComponentActivity() {
         }
 
         override fun onServiceDisconnected(name: ComponentName?) {
-            isBound = false
+            playerCommandJob?.cancel()
+            playerCommandJob = null
+            playerViewModel.unbindService()
             musicService = null
         }
     }
@@ -114,7 +118,7 @@ class MainActivity : ComponentActivity() {
         // 음악 서비스 시작 (앱 실행 시 백그라운드에서 재생 준비)
         Intent(this, MusicPlayerService::class.java).also { intent ->
             startService(intent)
-            bindService(intent, serviceConnection, Context.BIND_AUTO_CREATE)
+            isBound = bindService(intent, serviceConnection, Context.BIND_AUTO_CREATE)
         }
 
         enableEdgeToEdge(
@@ -140,6 +144,9 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onDestroy() {
+        playerCommandJob?.cancel()
+        playerViewModel.unbindService()
+        musicService = null
         super.onDestroy()
         if (isBound) {
             unbindService(serviceConnection)
@@ -148,18 +155,18 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun observePlayerCommands() {
-        lifecycleScope.launch {
+        val service = musicService ?: return
+        playerCommandJob?.cancel()
+        playerCommandJob = lifecycleScope.launch {
             playerViewModel.playerCommand.collect { command ->
-                musicService?.let { service ->
-                    when (command) {
-                        is PlayerViewModel.PlayerCommand.Play -> service.play(command.track, command.tracks)
-                        PlayerViewModel.PlayerCommand.TogglePlay -> service.togglePlayPause()
-                        PlayerViewModel.PlayerCommand.SkipNext -> service.skipNext()
-                        PlayerViewModel.PlayerCommand.SkipPrevious -> service.skipPrevious()
-                        is PlayerViewModel.PlayerCommand.Seek -> service.seekTo(command.position)
-                        PlayerViewModel.PlayerCommand.ToggleShuffle -> service.toggleShuffle()
-                        PlayerViewModel.PlayerCommand.ToggleRepeat -> service.toggleRepeat()
-                    }
+                when (command) {
+                    is PlayerViewModel.PlayerCommand.Play -> service.play(command.track, command.tracks)
+                    PlayerViewModel.PlayerCommand.TogglePlay -> service.togglePlayPause()
+                    PlayerViewModel.PlayerCommand.SkipNext -> service.skipNext()
+                    PlayerViewModel.PlayerCommand.SkipPrevious -> service.skipPrevious()
+                    is PlayerViewModel.PlayerCommand.Seek -> service.seekTo(command.position)
+                    PlayerViewModel.PlayerCommand.ToggleShuffle -> service.toggleShuffle()
+                    PlayerViewModel.PlayerCommand.ToggleRepeat -> service.toggleRepeat()
                 }
             }
         }

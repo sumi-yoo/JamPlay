@@ -29,8 +29,8 @@ import com.sumi.jamplay.MainActivity
 import com.sumi.jamplay.R
 import com.sumi.jamplay.data.datastore.PlayerPreferencesDataStore
 import com.sumi.jamplay.domain.model.Track
-import com.sumi.jamplay.ui.player.CoilImageLoader
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -71,6 +71,13 @@ class MusicPlayerService : Service() {
         }
     }
     private val playerListener = object : Player.Listener {
+        override fun onEvents(player: Player, events: Player.Events) {
+            syncPlaybackState()
+            val duration = player.duration.takeIf { it > 0 } ?: 0L
+            if (duration != metadataDuration) publishMediaMetadata()
+            showForegroundNotification()
+        }
+
         override fun onPlaybackStateChanged(state: Int) {
             if (state == Player.STATE_ENDED) {
                 when (_repeatMode.value) {
@@ -128,6 +135,11 @@ class MusicPlayerService : Service() {
     val lightVibrantColor: StateFlow<Color> = _lightVibrantColor.asStateFlow()
 
     private var positionUpdateJob: Job? = null
+    private var artworkJob: Job? = null
+    private var metadataTrack: Track? = null
+    private var albumArtBitmap: Bitmap? = null
+    private var metadataDuration = 0L
+    private val artworkLoader by lazy { ImageLoader(applicationContext) }
 
     override fun onCreate() {
         super.onCreate()
@@ -151,10 +163,10 @@ class MusicPlayerService : Service() {
             isActive = true
             setCallback(object : MediaSessionCompat.Callback() {
                 override fun onPlay() {
-                    togglePlayPause()
+                    resumePlayback()
                 }
                 override fun onPause() {
-                    togglePlayPause()
+                    pausePlayback()
                 }
                 override fun onSkipToNext() {
                     skipNext()
@@ -185,8 +197,7 @@ class MusicPlayerService : Service() {
     }
 
     private fun updatePlaybackState(state: Int) {
-        val track = trackList.getOrNull(currentIndex) ?: return
-        updateMediaMetadata(track)
+        if (_currentTrack.value == null) return
 
         val shuffleAction = PlaybackStateCompat.CustomAction.Builder(
             "ACTION_TOGGLE_SHUFFLE", "Shuffle",
@@ -297,34 +308,58 @@ class MusicPlayerService : Service() {
 
     private fun startUpdatingPosition() {
         positionUpdateJob?.cancel()
-        positionUpdateJob = CoroutineScope(Dispatchers.Main).launch {
+        positionUpdateJob = serviceScope.launch {
             while (isActive) {
                 _currentPosition.value = exoPlayer.currentPosition
                 _duration.value = exoPlayer.duration.takeIf { it > 0 } ?: 0L
 
-                updatePlaybackState(
-                    if (exoPlayer.isPlaying) PlaybackStateCompat.STATE_PLAYING
-                    else PlaybackStateCompat.STATE_PAUSED
-                )
-                showForegroundNotification()
+                syncPlaybackState()
 
                 delay(200)
             }
         }
     }
 
-    private fun updateMediaMetadata(track: Track) {
-        serviceScope.launch {
-            val albumArtBitmap = track.artworkUrl?.let { loadAlbumArtBitmap(it) }
+    private fun updateTrackMetadata(track: Track) {
+        // 한 곡 반복이나 같은 곡 재시작 시 이미지를 다시 읽지 않는다.
+        if (metadataTrack == track) {
+            publishMediaMetadata()
+            return
+        }
+        artworkJob?.cancel()
+        metadataTrack = track
+        albumArtBitmap = null
+        _vibrantColor.value = Color(0xFF1E1E1E)
+        _lightVibrantColor.value = Color(0xFF3E3E3E)
+        publishMediaMetadata() // 제목은 이미지 로딩을 기다리지 않고 먼저 갱신한다.
 
-            val metadata = MediaMetadataCompat.Builder()
+        artworkJob = serviceScope.launch {
+            val bitmap = track.artworkUrl?.let { loadAlbumArtBitmap(it) }
+            if (!isActive || _currentTrack.value != track) return@launch
+            albumArtBitmap = bitmap
+            publishMediaMetadata()
+
+            val palette = withContext(Dispatchers.Default) {
+                bitmap?.let { Palette.from(it).generate() }
+            }
+            if (!isActive || _currentTrack.value != track) return@launch
+            _vibrantColor.value = Color(palette?.vibrantSwatch?.rgb ?: 0xFF1E1E1E.toInt())
+            _lightVibrantColor.value = Color(palette?.lightVibrantSwatch?.rgb ?: 0xFF3E3E3E.toInt())
+        }
+    }
+
+    private fun publishMediaMetadata() {
+        val track = metadataTrack ?: return
+        if (_currentTrack.value != track) return
+        metadataDuration = exoPlayer.duration.takeIf { it > 0 } ?: 0L
+        mediaSession.setMetadata(
+            MediaMetadataCompat.Builder()
                 .putString(MediaMetadataCompat.METADATA_KEY_TITLE, track.name)
                 .putString(MediaMetadataCompat.METADATA_KEY_ARTIST, track.artistName)
-                .putLong(MediaMetadataCompat.METADATA_KEY_DURATION, exoPlayer.duration)
+                .putLong(MediaMetadataCompat.METADATA_KEY_DURATION, metadataDuration)
                 .putBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART, albumArtBitmap)
                 .build()
-            mediaSession.setMetadata(metadata)
-        }
+        )
     }
 
     fun play(track: Track, tracks: List<Track>) {
@@ -355,26 +390,50 @@ class MusicPlayerService : Service() {
         exoPlayer.setMediaItem(MediaItem.fromUri(track.streamUrl))
         exoPlayer.prepare()
         exoPlayer.play()
-        _isPlaying.value = true
         _currentTrack.value = track
-        updatePaletteColors(track.artworkUrl)
+        updateTrackMetadata(track)
 
-        updatePlaybackState(PlaybackStateCompat.STATE_PLAYING)
+        syncPlaybackState()
         showForegroundNotification()
     }
 
     fun togglePlayPause() {
-        if (exoPlayer.isPlaying) {
-            exoPlayer.pause()
-            _isPlaying.value = false
-            updatePlaybackState(PlaybackStateCompat.STATE_PAUSED)
+        if (exoPlayer.playWhenReady && exoPlayer.playerError == null) {
+            pausePlayback()
         } else {
-            exoPlayer.play()
-            _isPlaying.value = true
-            updatePlaybackState(PlaybackStateCompat.STATE_PLAYING)
+            resumePlayback()
         }
+    }
 
-        showForegroundNotification()
+    private fun resumePlayback() {
+        if (exoPlayer.mediaItemCount == 0) return
+        if (exoPlayer.playbackState == Player.STATE_IDLE) {
+            exoPlayer.prepare()
+        } else if (exoPlayer.playbackState == Player.STATE_ENDED) {
+            exoPlayer.seekTo(0)
+        }
+        exoPlayer.play()
+    }
+
+    private fun pausePlayback() {
+        exoPlayer.pause()
+    }
+
+    private fun syncPlaybackState() {
+        val state = exoPlayer.playbackState
+        // 버퍼링 중에도 정지 버튼을 제공하고, 오류·종료 시에는 재생 버튼을 표시한다.
+        _isPlaying.value = exoPlayer.playerError == null && exoPlayer.playWhenReady &&
+            (state == Player.STATE_BUFFERING || state == Player.STATE_READY)
+
+        val sessionState = when {
+            exoPlayer.playerError != null -> PlaybackStateCompat.STATE_ERROR
+            state == Player.STATE_IDLE || state == Player.STATE_ENDED -> PlaybackStateCompat.STATE_STOPPED
+            !exoPlayer.playWhenReady -> PlaybackStateCompat.STATE_PAUSED
+            state == Player.STATE_BUFFERING -> PlaybackStateCompat.STATE_BUFFERING
+            exoPlayer.isPlaying -> PlaybackStateCompat.STATE_PLAYING
+            else -> PlaybackStateCompat.STATE_PAUSED
+        }
+        updatePlaybackState(sessionState)
     }
 
     fun skipNext() {
@@ -391,9 +450,7 @@ class MusicPlayerService : Service() {
 
     fun seekTo(position: Long) {
         exoPlayer.seekTo(position)
-        updatePlaybackState(
-            if (exoPlayer.isPlaying) PlaybackStateCompat.STATE_PLAYING else PlaybackStateCompat.STATE_PAUSED
-        )
+        syncPlaybackState()
     }
 
     private fun finishTrack() {
@@ -402,11 +459,10 @@ class MusicPlayerService : Service() {
         exoPlayer.setMediaItem(MediaItem.fromUri(track.streamUrl))
         exoPlayer.prepare()
         exoPlayer.pause()
-        _isPlaying.value = false
         _currentTrack.value = track
-        updatePaletteColors(track.artworkUrl)
+        updateTrackMetadata(track)
 
-        updatePlaybackState(PlaybackStateCompat.STATE_PAUSED)
+        syncPlaybackState()
         showForegroundNotification()
     }
 
@@ -441,6 +497,7 @@ class MusicPlayerService : Service() {
                 playerPrefs.setShuffleMode(true)
             }
         }
+        showForegroundNotification()
     }
 
     fun toggleRepeat() {
@@ -455,16 +512,16 @@ class MusicPlayerService : Service() {
         showForegroundNotification()
     }
 
-    suspend fun loadAlbumArtBitmap(url: String): Bitmap? = withContext(Dispatchers.IO) {
+    private suspend fun loadAlbumArtBitmap(url: String): Bitmap? = withContext(Dispatchers.IO) {
         try {
-            val loader = ImageLoader.Builder(applicationContext)
-                .build()
             val request = ImageRequest.Builder(applicationContext)
                 .data(url)
                 .allowHardware(false)
                 .build()
-            val result = loader.execute(request)
+            val result = artworkLoader.execute(request)
             (result.drawable as? BitmapDrawable)?.bitmap
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             null
         }
@@ -472,6 +529,7 @@ class MusicPlayerService : Service() {
 
     private fun stopServiceSafely() {
         Log.d("MusicPlayerService", "Stopping service safely")
+        artworkJob?.cancel()
 
         try {
             // ExoPlayer 정리
@@ -518,26 +576,6 @@ class MusicPlayerService : Service() {
         }
     }
 
-    private fun updatePaletteColors(artworkUrl: String?) {
-        if (artworkUrl.isNullOrEmpty()) return
-
-        CoroutineScope(Dispatchers.IO).launch {
-            try {
-                val bitmap = CoilImageLoader.getBitmap(applicationContext, artworkUrl)
-                bitmap?.let {
-                    Palette.from(it).generate { palette ->
-                        palette?.let { p ->
-                            val vib = Color(p.vibrantSwatch?.rgb ?: 0xFF1E1E1E.toInt())
-                            val lightVib = Color(p.lightVibrantSwatch?.rgb ?: 0xFF3E3E3E.toInt())
-                            _vibrantColor.value = vib
-                            _lightVibrantColor.value = lightVib
-                        }
-                    }
-                }
-            } catch (_: Exception) {}
-        }
-    }
-
     inner class LocalBinder : Binder() {
         fun getService(): MusicPlayerService = this@MusicPlayerService
     }
@@ -551,6 +589,8 @@ class MusicPlayerService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
+            "ACTION_TOGGLE_SHUFFLE" -> toggleShuffle()
+            "ACTION_TOGGLE_REPEAT" -> toggleRepeat()
             "ACTION_STOP_SERVICE" -> {
                 positionUpdateJob?.cancel()
                 stopSelf()

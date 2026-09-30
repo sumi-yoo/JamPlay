@@ -16,6 +16,7 @@ import android.support.v4.media.MediaMetadataCompat
 import android.support.v4.media.session.MediaSessionCompat
 import android.support.v4.media.session.PlaybackStateCompat
 import android.util.Log
+import androidx.annotation.OptIn
 import androidx.compose.ui.graphics.Color
 import androidx.core.app.NotificationCompat
 import androidx.media3.common.MediaItem
@@ -46,7 +47,7 @@ import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 
-@UnstableApi
+@OptIn(UnstableApi::class)
 @AndroidEntryPoint
 class MusicPlayerService : Service() {
 

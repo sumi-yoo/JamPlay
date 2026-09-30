@@ -1,11 +1,6 @@
 package com.sumi.jamplay
 
-import android.content.ComponentName
-import android.content.Context
-import android.content.Intent
-import android.content.ServiceConnection
 import android.os.Bundle
-import android.os.IBinder
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
@@ -57,8 +52,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.lifecycleScope
-import androidx.media3.common.util.UnstableApi
 import androidx.navigation.NavController
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
@@ -67,7 +60,6 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import com.sumi.jamplay.service.MusicPlayerService
 import com.sumi.jamplay.ui.player.MiniPlayerScreen
 import com.sumi.jamplay.ui.player.PlayerScreen
 import com.sumi.jamplay.ui.player.PlayerViewModel
@@ -80,46 +72,16 @@ import com.sumi.jamplay.ui.search.SearchViewViewModel
 import com.sumi.jamplay.ui.theme.JamPlayBackground
 import com.sumi.jamplay.ui.theme.JamPlayTheme
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.launch
 
-@UnstableApi
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
-    private var musicService: MusicPlayerService? = null
-    private var isBound = false
-    private var playerCommandJob: Job? = null
-
     private val playerViewModel: PlayerViewModel by viewModels()
-
-    private val serviceConnection = object : ServiceConnection {
-        override fun onServiceConnected(name: ComponentName?, binder: IBinder?) {
-            val bd = binder as MusicPlayerService.LocalBinder
-            musicService = bd.getService()
-            isBound = true
-            musicService?.let { playerViewModel.bindService(it) }
-            observePlayerCommands()
-        }
-
-        override fun onServiceDisconnected(name: ComponentName?) {
-            playerCommandJob?.cancel()
-            playerCommandJob = null
-            playerViewModel.unbindService()
-            musicService = null
-        }
-    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         val navigateToPlayer = savedInstanceState == null && intent?.getBooleanExtra("navigate_to_player", false) == true
-
-        // 음악 서비스 시작 (앱 실행 시 백그라운드에서 재생 준비)
-        Intent(this, MusicPlayerService::class.java).also { intent ->
-            startService(intent)
-            isBound = bindService(intent, serviceConnection, Context.BIND_AUTO_CREATE)
-        }
 
         enableEdgeToEdge(
             statusBarStyle = SystemBarStyle.dark(
@@ -143,34 +105,6 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    override fun onDestroy() {
-        playerCommandJob?.cancel()
-        playerViewModel.unbindService()
-        musicService = null
-        super.onDestroy()
-        if (isBound) {
-            unbindService(serviceConnection)
-            isBound = false
-        }
-    }
-
-    private fun observePlayerCommands() {
-        val service = musicService ?: return
-        playerCommandJob?.cancel()
-        playerCommandJob = lifecycleScope.launch {
-            playerViewModel.playerCommand.collect { command ->
-                when (command) {
-                    is PlayerViewModel.PlayerCommand.Play -> service.play(command.track, command.tracks)
-                    PlayerViewModel.PlayerCommand.TogglePlay -> service.togglePlayPause()
-                    PlayerViewModel.PlayerCommand.SkipNext -> service.skipNext()
-                    PlayerViewModel.PlayerCommand.SkipPrevious -> service.skipPrevious()
-                    is PlayerViewModel.PlayerCommand.Seek -> service.seekTo(command.position)
-                    PlayerViewModel.PlayerCommand.ToggleShuffle -> service.toggleShuffle()
-                    PlayerViewModel.PlayerCommand.ToggleRepeat -> service.toggleRepeat()
-                }
-            }
-        }
-    }
 }
 
 @Composable

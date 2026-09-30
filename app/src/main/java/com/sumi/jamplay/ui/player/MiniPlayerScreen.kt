@@ -36,7 +36,7 @@ fun MiniPlayerScreen(
     viewModel: PlayerViewModel,
     onClick: () -> Unit
 ) {
-    val currentTrack by viewModel.currentTrack.collectAsState()
+    val currentTrack = viewModel.currentTrack.collectAsState().value
     val isPlaying by viewModel.isPlaying.collectAsState()
     val vibrantColor by viewModel.vibrantColor.collectAsState()
     val lightVibrantColor by viewModel.lightVibrantColor.collectAsState()
@@ -62,14 +62,14 @@ fun MiniPlayerScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 AsyncImage(
-                    model = currentTrack!!.artworkUrl,
+                    model = currentTrack.artworkUrl,
                     contentDescription = null,
                     modifier = Modifier.size(48.dp).clip(RoundedCornerShape(4.dp))
                 )
                 Spacer(Modifier.width(8.dp))
                 Column(Modifier.weight(1f)) {
                     Text(
-                        text = currentTrack?.name ?: "",
+                        text = currentTrack.name,
                         fontSize = 16.sp,
                         fontWeight = FontWeight.SemiBold,
                         color = Color.White,
@@ -78,7 +78,7 @@ fun MiniPlayerScreen(
                     )
 
                     Text(
-                        text = currentTrack?.artistName ?: "",
+                        text = currentTrack.artistName,
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Normal,
                         color = Color.White.copy(alpha = 0.6f),

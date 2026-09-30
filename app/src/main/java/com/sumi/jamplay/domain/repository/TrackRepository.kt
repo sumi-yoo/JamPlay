@@ -1,10 +1,7 @@
 package com.sumi.jamplay.domain.repository
 
-import androidx.paging.PagingData
-import com.sumi.jamplay.domain.model.Track
-import kotlinx.coroutines.flow.Flow
+import com.sumi.jamplay.domain.model.TrackPage
 
 interface TrackRepository {
-
-    fun searchTracks(query: String): Flow<PagingData<Track>>
+    suspend fun searchTracks(query: String, offset: Int, limit: Int): TrackPage
 }

@@ -98,7 +98,7 @@ fun PlayerScreen(
     val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
 
     val favoritesPlaylistId = stringResource(R.string.favorites_playlist_name).hashCode().toLong()
-    val currentTrack by playerViewModel.currentTrack.collectAsState()
+    val currentTrack = playerViewModel.currentTrack.collectAsState().value
     val favoriteTracks by playlistViewModel.getTracksOfPlaylist(favoritesPlaylistId).collectAsState(initial = emptyList())
     val isPlaying by playerViewModel.isPlaying.collectAsState()
     val isShuffleMode by playerViewModel.isShuffleMode.collectAsState()
@@ -110,7 +110,7 @@ fun PlayerScreen(
 
     // 현재 트랙이 즐겨찾기 안에 있는지 실시간으로 판단
     val isFavorite = remember(currentTrack, favoriteTracks) {
-        favoriteTracks.any { it.id == currentTrack?.id }
+        favoriteTracks.any { it.id == currentTrack.id }
     }
 
     val vibrantColor by playerViewModel.vibrantColor.collectAsState()
@@ -162,7 +162,7 @@ fun PlayerScreen(
                     .padding(end = 20.dp, start = 20.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                AlbumArtwork(currentTrack!!.artworkUrl)
+                AlbumArtwork(currentTrack.artworkUrl)
                 Spacer(modifier = Modifier.width(24.dp))
                 // 우측 컨트롤
                 Column(
@@ -173,14 +173,14 @@ fun PlayerScreen(
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text(
-                            text = currentTrack!!.name,
+                            text = currentTrack.name,
                             fontWeight = FontWeight.Bold,
                             fontSize = 24.sp,
                             textAlign = TextAlign.Center,
                             color = contentColor
                         )
                         Text(
-                            text = currentTrack!!.artistName,
+                            text = currentTrack.artistName,
                             fontSize = 18.sp,
                             color = contentColor.copy(alpha = 0.7f),
                             textAlign = TextAlign.Center
@@ -269,9 +269,9 @@ fun PlayerScreen(
                         IconButton(
                             onClick = {
                                 if (isFavorite) {
-                                    playlistViewModel.deleteTrackFromPlaylist(favoritesPlaylistId, currentTrack!!)
+                                    playlistViewModel.deleteTrackFromPlaylist(favoritesPlaylistId, currentTrack)
                                 } else {
-                                    playlistViewModel.addTrackToPlaylist(favoritesPlaylistId, currentTrack!!)
+                                    playlistViewModel.addTrackToPlaylist(favoritesPlaylistId, currentTrack)
                                 }
                             }
                         ) {
@@ -304,11 +304,11 @@ fun PlayerScreen(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.SpaceBetween
             ) {
-                AlbumArtwork(currentTrack!!.artworkUrl)
+                AlbumArtwork(currentTrack.artworkUrl)
                 Spacer(modifier = Modifier.height(4.dp))
 
                 Text(
-                    currentTrack!!.name,
+                    currentTrack.name,
                     fontWeight = FontWeight.Bold,
                     fontSize = 24.sp,
                     modifier = Modifier.fillMaxWidth(),
@@ -316,7 +316,7 @@ fun PlayerScreen(
                     color = contentColor
                 )
                 Text(
-                    currentTrack!!.artistName,
+                    currentTrack.artistName,
                     fontSize = 18.sp,
                     color = contentColor.copy(alpha = 0.7f),
                     modifier = Modifier.fillMaxWidth(),
@@ -396,9 +396,9 @@ fun PlayerScreen(
                     IconButton(
                         onClick = {
                             if (isFavorite) {
-                                playlistViewModel.deleteTrackFromPlaylist(favoritesPlaylistId, currentTrack!!)
+                                playlistViewModel.deleteTrackFromPlaylist(favoritesPlaylistId, currentTrack)
                             } else {
-                                playlistViewModel.addTrackToPlaylist(favoritesPlaylistId, currentTrack!!)
+                                playlistViewModel.addTrackToPlaylist(favoritesPlaylistId, currentTrack)
                             }
                         }
                     ) {

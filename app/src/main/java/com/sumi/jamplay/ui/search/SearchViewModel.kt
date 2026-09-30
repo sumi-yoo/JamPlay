@@ -5,6 +5,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.paging.Pager
+import androidx.paging.PagingConfig
 import androidx.paging.PagingData
 import androidx.paging.cachedIn
 import com.sumi.jamplay.domain.model.Track
@@ -42,7 +44,10 @@ class SearchViewViewModel @Inject constructor(
     @OptIn(ExperimentalCoroutinesApi::class)
     val tracks: Flow<PagingData<Track>> = _query
         .flatMapLatest { query ->
-            repository.searchTracks(query)
+            Pager(
+                config = PagingConfig(pageSize = 30, prefetchDistance = 10, initialLoadSize = 60),
+                pagingSourceFactory = { TrackPagingSource(repository, query) }
+            ).flow
         }
         .cachedIn(viewModelScope)
 

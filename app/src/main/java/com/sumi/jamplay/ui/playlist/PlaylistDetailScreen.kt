@@ -71,7 +71,7 @@ fun PlaylistDetailScreen(
     onMiniPlayerClick: () -> Unit,
     onBack: () -> Unit
 ) {
-    val playlist by playlistViewModel.selectedPlaylist.collectAsState()
+    val playlist = playlistViewModel.selectedPlaylist.collectAsState().value
     val playlists by playlistViewModel.playlists.collectAsState()
     val currentTrack by playerViewModel.currentTrack.collectAsState()
     val tracks by playlistViewModel.tracks.collectAsState()
@@ -132,7 +132,7 @@ fun PlaylistDetailScreen(
             }
 
             Text(
-                text = playlist!!.name,
+                text = playlist.name,
                 style = MaterialTheme.typography.titleLarge,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
@@ -332,7 +332,7 @@ fun PlaylistDetailScreen(
     if (playlistViewModel.showCreateDialog) {
         CreatePlaylistDialog(
             title = stringResource(R.string.playlist_rename),
-            initialName = playlist?.name ?: "",
+            initialName = playlist.name,
             existingNames = playlists.map { it.name },
             onConfirm = { newName ->
                 playlistViewModel.renamePlaylist(newName)

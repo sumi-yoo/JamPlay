@@ -8,6 +8,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -16,7 +17,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -58,17 +58,16 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import coil.compose.AsyncImage
 import com.sumi.jamplay.R
 import com.sumi.jamplay.domain.model.Track
-import com.sumi.jamplay.ui.player.MiniPlayerScreen
 import com.sumi.jamplay.ui.player.PlayingWave
 import com.sumi.jamplay.ui.player.PlayerViewModel
 import com.sumi.jamplay.ui.theme.JamPlayPurple
 
 @Composable
 fun PlaylistDetailScreen(
+    padding: PaddingValues,
     playlistViewModel: PlaylistViewModel,
     playerViewModel: PlayerViewModel,
     onTrackClick: (Track, List<Track>) -> Unit,
-    onMiniPlayerClick: () -> Unit,
     onBack: () -> Unit
 ) {
     val playlist = playlistViewModel.selectedPlaylist.collectAsState().value
@@ -107,7 +106,7 @@ fun PlaylistDetailScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .systemBarsPadding()
+            .padding(padding)
     ) {
         // 상단 앱바
         Row(
@@ -318,14 +317,7 @@ fun PlaylistDetailScreen(
             }
         }
 
-        if (currentTrack != null) {
-            MiniPlayerScreen(
-                viewModel = playerViewModel,
-                onClick = {
-                    onMiniPlayerClick()
-                }
-            )
-        }
+
     }
 
     // 새 플레이리스트 생성 다이얼로그
@@ -333,7 +325,7 @@ fun PlaylistDetailScreen(
         CreatePlaylistDialog(
             title = stringResource(R.string.playlist_rename),
             initialName = playlist.name,
-            existingNames = playlists.map { it.name },
+            existingNames = playlists.filter { it.id != playlist.id }.map { it.name },
             onConfirm = { newName ->
                 playlistViewModel.renamePlaylist(newName)
             },

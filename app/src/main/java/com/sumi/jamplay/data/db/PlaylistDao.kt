@@ -5,6 +5,7 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Transaction
+import com.sumi.jamplay.domain.policy.PlaylistNamePolicy
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -31,20 +32,18 @@ interface PlaylistDao {
 
     @Transaction
     suspend fun insertPlaylistIfNameAvailable(playlist: PlaylistEntity) {
-        val name = playlist.name.trim()
-        if (name.isBlank() || getPlaylistEntities().any {
-                it.name.trim() == name
-            }) return
+        val name = PlaylistNamePolicy.availableName(
+            playlist.name, getPlaylistEntities().map { it.name }
+        ) ?: return
 
         insertPlaylist(playlist.copy(name = name))
     }
 
     @Transaction
     suspend fun renamePlaylistIfNameAvailable(playlistId: Long, newName: String) {
-        val name = newName.trim()
-        if (name.isBlank() || getPlaylistEntities().any {
-                it.id != playlistId && it.name.trim() == name
-            }) return
+        val name = PlaylistNamePolicy.availableName(
+            newName, getPlaylistEntities().filter { it.id != playlistId }.map { it.name }
+        ) ?: return
 
         renamePlaylist(playlistId, name)
     }

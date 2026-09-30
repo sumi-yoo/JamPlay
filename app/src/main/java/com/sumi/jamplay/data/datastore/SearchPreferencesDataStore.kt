@@ -3,6 +3,7 @@ package com.sumi.jamplay.data.datastore
 import android.content.Context
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
+import com.sumi.jamplay.domain.policy.SearchHistoryPolicy
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -27,18 +28,10 @@ class SearchPreferencesDataStore @Inject constructor(
         }
 
     // 검색어 추가
-    suspend fun addSearch(keyword: String, maxSize: Int = 10) {
+    suspend fun addSearch(keyword: String) {
         dataStore.edit { prefs ->
-            val current = prefs[SEARCH_KEY]?.let { json.decodeFromString<List<String>>(it).toMutableList() } ?: mutableListOf()
-
-            current.remove(keyword)      // 중복 제거
-            current.add(0, keyword)      // 맨 위 추가
-
-            if (current.size > maxSize) {
-                current.subList(maxSize, current.size).clear()
-            }
-
-            prefs[SEARCH_KEY] = json.encodeToString(current)
+            val current = prefs[SEARCH_KEY]?.let { json.decodeFromString<List<String>>(it) } ?: emptyList()
+            prefs[SEARCH_KEY] = json.encodeToString(SearchHistoryPolicy.add(current, keyword))
         }
     }
 }

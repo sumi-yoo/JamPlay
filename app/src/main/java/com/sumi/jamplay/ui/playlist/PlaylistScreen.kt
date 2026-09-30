@@ -52,6 +52,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import coil.compose.AsyncImage
+import com.sumi.jamplay.domain.policy.PlaylistNamePolicy
 import com.sumi.jamplay.R
 import com.sumi.jamplay.domain.model.Playlist
 
@@ -331,20 +332,18 @@ fun CreatePlaylistDialog(
                         Text(stringResource(R.string.cancel), color = Color.White.copy(alpha = 0.7f))
                     }
 
-                    val exists = existingNames.any { it.trim() == name.trim() }
-
                     TextButton(
                         onClick = {
-                            when {
-                                name.isBlank() -> {
+                            when (PlaylistNamePolicy.validate(name, existingNames)) {
+                                PlaylistNamePolicy.Error.EMPTY -> {
                                     showEmpty = true
                                     showError = false
                                 }
-                                exists -> {
+                                PlaylistNamePolicy.Error.DUPLICATE -> {
                                     showEmpty = false
                                     showError = true
                                 }
-                                else -> {
+                                null -> {
                                     onConfirm(name.trim())
                                     onDismiss()
                                 }

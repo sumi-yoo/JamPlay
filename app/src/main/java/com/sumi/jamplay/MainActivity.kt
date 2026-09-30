@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.safeDrawing
@@ -115,6 +116,9 @@ fun MainScreen(navController: NavHostController, playerViewModel: PlayerViewMode
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination?.route
 
+    val showBottomNavigation = currentDestination == "playlist" || currentDestination == "search"
+    val showMiniPlayer = showBottomNavigation || currentDestination == "playlistDetail/{playlistId}"
+
     Scaffold(
         modifier = Modifier.fillMaxSize()
             .background(JamPlayBackground)
@@ -122,9 +126,10 @@ fun MainScreen(navController: NavHostController, playerViewModel: PlayerViewMode
                 WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal)
             ),
         bottomBar = {
-            // BottomNavigation + MiniPlayer 숨김
-            if (currentDestination == "playlist" || currentDestination == "search") {
-                Column {
+            if (showMiniPlayer) {
+                Column(
+                    modifier = if (showBottomNavigation) Modifier else Modifier.navigationBarsPadding()
+                ) {
                     MiniPlayerScreen(
                         viewModel = playerViewModel
                     ) {
@@ -133,7 +138,9 @@ fun MainScreen(navController: NavHostController, playerViewModel: PlayerViewMode
                             launchSingleTop = true
                         }
                     }
-                    BottomNavigationBar(navController)
+                    if (showBottomNavigation) {
+                        BottomNavigationBar(navController)
+                    }
                 }
             }
         }
@@ -194,17 +201,12 @@ fun MainScreen(navController: NavHostController, playerViewModel: PlayerViewMode
                     }
                 }
                 PlaylistDetailScreen(
+                    padding = padding,
                     playlistViewModel = playlistViewModel,
                     playerViewModel = playerViewModel,
                     onTrackClick = { track, trackList ->
                         playerViewModel.play(track, trackList)
                         navController.navigate("player")
-                    },
-                    onMiniPlayerClick = {
-                        // 클릭 시 PlayerScreen으로 전환
-                        navController.navigate("player") {
-                            launchSingleTop = true
-                        }
                     },
                     onBack = {
                         navController.popBackStack()

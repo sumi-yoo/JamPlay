@@ -130,7 +130,7 @@ fun SearchScreen(
 
     Box(modifier = Modifier.fillMaxSize().padding(padding)) {
         Column(
-            modifier = Modifier.padding(8.dp)
+            modifier = Modifier.padding(start = 8.dp, top = 8.dp, end = 8.dp)
         ) {
             OutlinedTextField(
                 value = tfValue,
@@ -226,7 +226,7 @@ fun SearchScreen(
                     } else {
                         LazyColumn(
                             modifier = Modifier.fillMaxSize(),
-                            verticalArrangement = Arrangement.spacedBy(8.dp) // 아이템 사이 간격 4dp
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             items(tracks) { track ->
                                 track?.let {

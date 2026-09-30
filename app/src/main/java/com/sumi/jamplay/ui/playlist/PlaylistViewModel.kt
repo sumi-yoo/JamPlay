@@ -8,6 +8,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.sumi.jamplay.domain.model.Playlist
 import com.sumi.jamplay.domain.model.Track
+import com.sumi.jamplay.domain.usecase.CreatePlaylistUseCase
+import com.sumi.jamplay.domain.usecase.SavePlaylistSelectionUseCase
 import com.sumi.jamplay.domain.repository.PlaylistRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -22,13 +24,14 @@ import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
-import java.util.UUID
 import javax.inject.Inject
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class PlaylistViewModel @Inject constructor(
-    private val repository: PlaylistRepository
+    private val repository: PlaylistRepository,
+    private val createPlaylist: CreatePlaylistUseCase,
+    private val saveSelection: SavePlaylistSelectionUseCase
 ) : ViewModel() {
 
     private val _favoritesId = MutableStateFlow<Long?>(null)
@@ -98,14 +101,9 @@ class PlaylistViewModel @Inject constructor(
     }
 
     fun savePlaylistSelection(track: Track) {
-        val (selected, unselected) = selectedPlaylists.toMap().entries.partition { it.value }
-
-        selected.forEach { (playlistId, _) ->
-            addTrackToPlaylist(playlistId, track)
-        }
-
-        unselected.forEach { (playlistId, _) ->
-            deleteTrackFromPlaylist(playlistId, track)
+        val selection = selectedPlaylists.toMap()
+        viewModelScope.launch {
+            saveSelection(track, selection)
         }
     }
 
@@ -116,10 +114,8 @@ class PlaylistViewModel @Inject constructor(
     }
 
     fun addPlaylist(name: String) {
-        val trimmedName = name.trim()
-        val playlistId = UUID.randomUUID().mostSignificantBits
         viewModelScope.launch {
-            repository.addPlaylist(Playlist(id = playlistId, name = trimmedName))
+            createPlaylist(name)
         }
     }
 

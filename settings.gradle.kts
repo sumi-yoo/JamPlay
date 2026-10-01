@@ -19,6 +19,6 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "FlowPlay"
+rootProject.name = "JamPlay"
 include(":app")
  

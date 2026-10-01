@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.FlowPlay" parent="Theme.Material3.Dark.NoActionBar">
+    <style name="Theme.JamPlay" parent="Theme.Material3.Dark.NoActionBar">
         <item name="android:windowBackground">@color/jamplay_background</item>
         <item name="colorPrimary">@color/jamplay_purple</item>
         <item name="colorOnPrimary">@android:color/white</item>

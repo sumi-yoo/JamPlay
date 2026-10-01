@@ -1,6 +1,8 @@
 [versions]
 agp = "8.10.0"
 kotlin = "2.0.21"
+coroutines = "1.8.1"
+javaxInject = "1"
 coreKtx = "1.17.0"
 junit = "4.13.2"
 junitVersion = "1.3.0"
@@ -13,6 +15,8 @@ pagingCommonJvm = "3.3.6"
 roomCompiler = "2.8.2"
 
 [libraries]
+kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
+javax-inject = { module = "javax.inject:javax.inject", version.ref = "javaxInject" }
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
@@ -27,4 +31,4 @@ androidx-room-compiler = { group = "androidx.room", name = "room-compiler", vers
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
-
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }

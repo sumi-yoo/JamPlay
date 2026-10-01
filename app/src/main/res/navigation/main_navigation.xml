@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/main_navigation"
+    app:startDestination="@id/playlist">
+
+    <fragment
+        android:id="@+id/playlist"
+        android:name="com.sumi.jamplay.ui.playlist.PlaylistFragment"
+        android:label="@string/playlist_title" />
+
+    <fragment
+        android:id="@+id/search"
+        android:name="com.sumi.jamplay.ui.search.SearchFragment"
+        android:label="@string/search_title" />
+
+    <fragment
+        android:id="@+id/player"
+        android:name="com.sumi.jamplay.ui.player.PlayerFragment" />
+
+    <fragment
+        android:id="@+id/playlist_select"
+        android:name="com.sumi.jamplay.ui.playlist.PlaylistSelectFragment" />
+
+    <fragment
+        android:id="@+id/playlist_detail"
+        android:name="com.sumi.jamplay.ui.playlist.PlaylistDetailFragment">
+
+        <argument
+            android:name="playlistId"
+            app:argType="long" />
+    </fragment>
+</navigation>

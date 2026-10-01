@@ -1,14 +1,9 @@
 package com.sumi.jamplay.ui.player
 
-import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import com.sumi.jamplay.domain.model.Track
 import com.sumi.jamplay.domain.playback.PlaybackController
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.stateIn
 import javax.inject.Inject
 
 @HiltViewModel
@@ -21,10 +16,8 @@ class PlayerViewModel @Inject constructor(
     val repeatMode = playbackController.repeatMode
     val currentPosition = playbackController.currentPosition
     val duration = playbackController.duration
-    val vibrantColor = playbackController.vibrantColor.map { Color(it) }
-        .stateIn(viewModelScope, SharingStarted.Eagerly, Color(playbackController.vibrantColor.value))
-    val lightVibrantColor = playbackController.lightVibrantColor.map { Color(it) }
-        .stateIn(viewModelScope, SharingStarted.Eagerly, Color(playbackController.lightVibrantColor.value))
+    val vibrantColor = playbackController.vibrantColor
+    val lightVibrantColor = playbackController.lightVibrantColor
 
     init {
         playbackController.connect()

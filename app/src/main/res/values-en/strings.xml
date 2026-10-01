@@ -27,4 +27,18 @@
     <string name="channel_name_music_playback">Music Playback</string>
     <string name="channel_desc_music_playback">Play music in the background.</string>
     <string name="no_search_results">No search results.</string>
+    <string name="play">Play</string>
+    <string name="pause">Pause</string>
+    <string name="search_load_error">Could not load tracks.</string>
+    <string name="previous_track">Previous track</string>
+    <string name="next_track">Next track</string>
+    <string name="shuffle_on">Shuffle on</string>
+    <string name="shuffle_off">Shuffle off</string>
+    <string name="repeat_off">Repeat off</string>
+    <string name="repeat_all">Repeat all</string>
+    <string name="repeat_one">Repeat one</string>
+    <string name="favorite_add">Add to favorites</string>
+    <string name="favorite_remove">Remove from favorites</string>
+    <string name="playback_position">Playback position</string>
+    <string name="no_current_track">Select a track to play.</string>
 </resources>

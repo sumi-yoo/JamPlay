@@ -1,9 +1,5 @@
 package com.sumi.jamplay.ui.playlist
 
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateMapOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.sumi.jamplay.domain.model.Playlist
@@ -16,6 +12,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.asStateFlow
@@ -77,31 +74,62 @@ class PlaylistViewModel @Inject constructor(
             initialValue = emptyList()
         )
 
-    var showCreateDialog by mutableStateOf(false)
-        private set
+    private val _selectedPlaylists = MutableStateFlow<Map<Long, Boolean>>(emptyMap())
+    val selectedPlaylists = _selectedPlaylists.asStateFlow()
+    private var selectionTrackId: Long? = null
 
-    var newPlaylistName by mutableStateOf("")
-        private set
+    private val _deletedPlaylists = MutableStateFlow<Set<Long>>(emptySet())
+    val deletedPlaylists = _deletedPlaylists.asStateFlow()
 
-    val selectedPlaylists = mutableStateMapOf<Long, Boolean>()
+    private val _deleteTrackMode = MutableStateFlow(false)
+    val deleteTrackMode = _deleteTrackMode.asStateFlow()
 
-    val deletedPlaylists = mutableStateMapOf<Long, Boolean>()
+    private val _deletedTracks = MutableStateFlow<Set<Long>>(emptySet())
+    val deletedTracks = _deletedTracks.asStateFlow()
 
-    // 선택 모드 상태
-    var deleteTrackMode by mutableStateOf(false)
-        private set
+    fun initializeSelection(track: Track, playlists: List<Playlist>) {
+        if (selectionTrackId != track.id) {
+            selectionTrackId = track.id
+            _selectedPlaylists.value = emptyMap()
+        }
+        _selectedPlaylists.update { selected ->
+            playlists.associate { playlist ->
+                playlist.id to (selected[playlist.id] ?: playlist.tracks.any { it.id == track.id })
+            }
+        }
+    }
 
-    val deletedTracks = mutableStateMapOf<Long, Boolean>()
+    fun setPlaylistSelected(id: Long, selected: Boolean) {
+        _selectedPlaylists.update { it + (id to selected) }
+    }
 
-    var acceptsClicks by mutableStateOf(true)
-        private set
+    fun setPlaylistDeleted(id: Long, selected: Boolean) {
+        if (id == _favoritesId.value) return
+        _deletedPlaylists.update { if (selected) it + id else it - id }
+    }
 
-    fun isTrackInPlaylist(playlistId: Long, trackId: Long): Boolean {
-        return playlists.value.firstOrNull { it.id == playlistId }?.tracks?.any { it.id == trackId } == true
+    fun setTrackDeleted(id: Long, selected: Boolean) {
+        _deletedTracks.update { if (selected) it + id else it - id }
+    }
+
+    fun deleteSelectedPlaylists() {
+        deletePlaylists(_deletedPlaylists.value.toList())
+        clearSelectionPlaylists()
+        _deletePlayListMode.value = false
+    }
+
+    fun deleteSelectedTracks() {
+        val id = _playlistId.value ?: return
+        val selected = tracks.value.filter { it.id in _deletedTracks.value }
+        viewModelScope.launch {
+            selected.forEach { repository.deleteTrackFromPlaylist(id, it) }
+        }
+        clearSelectionTracks()
+        updateDeleteTrackMode(false)
     }
 
     fun savePlaylistSelection(track: Track) {
-        val selection = selectedPlaylists.toMap()
+        val selection = _selectedPlaylists.value.toMap()
         viewModelScope.launch {
             saveSelection(track, selection)
         }
@@ -147,43 +175,33 @@ class PlaylistViewModel @Inject constructor(
         _favoritesId.value = favoritesName.hashCode().toLong()
     }
 
-    fun updateShowCreateDialog(show: Boolean) {
-        showCreateDialog = show
-    }
-
-    fun updateNewPlaylistName(name: String) {
-        newPlaylistName = name
-    }
-
     fun clearSelectedPlaylists() {
-        selectedPlaylists.clear()
+        selectionTrackId = null
+        _selectedPlaylists.value = emptyMap()
     }
 
     fun clearSelectionPlaylists() {
-        deletedPlaylists.clear()
+        _deletedPlaylists.value = emptySet()
     }
 
     fun updateDeleteTrackMode(enabled: Boolean) {
-        deleteTrackMode = enabled
+        _deleteTrackMode.value = enabled
     }
 
     fun clearSelectionTracks() {
-        deletedTracks.clear()
+        _deletedTracks.value = emptySet()
     }
 
     fun setPlaylistId(id: Long) {
         _playlistId.value = id
     }
 
-    fun renamePlaylist(newName: String) {
-        _playlistId.value?.let {
+    fun renamePlaylist(newName: String, playlistId: Long? = _playlistId.value) {
+        playlistId?.let {
             viewModelScope.launch {
                 repository.renamePlaylist(it, newName)
             }
         }
     }
 
-    fun enableClicks() { acceptsClicks = true }
-
-    fun disableClicks() { acceptsClicks = false }
 }

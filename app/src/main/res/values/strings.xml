@@ -27,4 +27,18 @@
     <string name="channel_name_music_playback">음악 재생</string>
     <string name="channel_desc_music_playback">백그라운드에서 음악을 재생합니다.</string>
     <string name="no_search_results">검색 결과가 없습니다.</string>
+    <string name="play">재생</string>
+    <string name="pause">일시정지</string>
+    <string name="search_load_error">곡을 불러오지 못했습니다.</string>
+    <string name="previous_track">이전 곡</string>
+    <string name="next_track">다음 곡</string>
+    <string name="shuffle_on">셔플 켜짐</string>
+    <string name="shuffle_off">셔플 꺼짐</string>
+    <string name="repeat_off">반복 꺼짐</string>
+    <string name="repeat_all">전체 반복</string>
+    <string name="repeat_one">한 곡 반복</string>
+    <string name="favorite_add">즐겨찾기 추가</string>
+    <string name="favorite_remove">즐겨찾기 해제</string>
+    <string name="playback_position">재생 위치</string>
+    <string name="no_current_track">재생할 곡을 선택해주세요.</string>
 </resources>

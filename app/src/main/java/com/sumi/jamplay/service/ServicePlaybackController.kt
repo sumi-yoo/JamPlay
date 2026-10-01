@@ -5,7 +5,6 @@ import android.content.Context
 import android.content.Intent
 import android.content.ServiceConnection
 import android.os.IBinder
-import androidx.compose.ui.graphics.toArgb
 import com.sumi.jamplay.domain.model.Track
 import com.sumi.jamplay.domain.playback.PlaybackController
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -61,8 +60,8 @@ class ServicePlaybackController @Inject constructor(
                 launch { service.repeatMode.collect { _repeatMode.value = it } }
                 launch { service.currentPosition.collect { _currentPosition.value = it } }
                 launch { service.duration.collect { _duration.value = it } }
-                launch { service.vibrantColor.collect { _vibrantColor.value = it.toArgb() } }
-                launch { service.lightVibrantColor.collect { _lightVibrantColor.value = it.toArgb() } }
+                launch { service.vibrantColor.collect { _vibrantColor.value = it } }
+                launch { service.lightVibrantColor.collect { _lightVibrantColor.value = it } }
                 launch { for (command in commands) command(service) }
             }
         }

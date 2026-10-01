@@ -17,7 +17,6 @@ import android.support.v4.media.session.MediaSessionCompat
 import android.support.v4.media.session.PlaybackStateCompat
 import android.util.Log
 import androidx.annotation.OptIn
-import androidx.compose.ui.graphics.Color
 import androidx.core.app.NotificationCompat
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
@@ -129,11 +128,11 @@ class MusicPlayerService : Service() {
     private val _duration = MutableStateFlow(0L)
     val duration: StateFlow<Long> = _duration.asStateFlow()
 
-    private val _vibrantColor = MutableStateFlow(Color(0xFF1E1E1E))
-    val vibrantColor: StateFlow<Color> = _vibrantColor.asStateFlow()
+    private val _vibrantColor = MutableStateFlow(0xFF1E1E1E.toInt())
+    val vibrantColor: StateFlow<Int> = _vibrantColor.asStateFlow()
 
-    private val _lightVibrantColor = MutableStateFlow(Color(0xFF3E3E3E))
-    val lightVibrantColor: StateFlow<Color> = _lightVibrantColor.asStateFlow()
+    private val _lightVibrantColor = MutableStateFlow(0xFF3E3E3E.toInt())
+    val lightVibrantColor: StateFlow<Int> = _lightVibrantColor.asStateFlow()
 
     private var positionUpdateJob: Job? = null
     private var artworkJob: Job? = null
@@ -330,8 +329,8 @@ class MusicPlayerService : Service() {
         artworkJob?.cancel()
         metadataTrack = track
         albumArtBitmap = null
-        _vibrantColor.value = Color(0xFF1E1E1E)
-        _lightVibrantColor.value = Color(0xFF3E3E3E)
+        _vibrantColor.value = 0xFF1E1E1E.toInt()
+        _lightVibrantColor.value = 0xFF3E3E3E.toInt()
         publishMediaMetadata() // 제목은 이미지 로딩을 기다리지 않고 먼저 갱신한다.
 
         artworkJob = serviceScope.launch {
@@ -344,8 +343,8 @@ class MusicPlayerService : Service() {
                 bitmap?.let { Palette.from(it).generate() }
             }
             if (!isActive || _currentTrack.value != track) return@launch
-            _vibrantColor.value = Color(palette?.vibrantSwatch?.rgb ?: 0xFF1E1E1E.toInt())
-            _lightVibrantColor.value = Color(palette?.lightVibrantSwatch?.rgb ?: 0xFF3E3E3E.toInt())
+            _vibrantColor.value = palette?.vibrantSwatch?.rgb ?: 0xFF1E1E1E.toInt()
+            _lightVibrantColor.value = palette?.lightVibrantSwatch?.rgb ?: 0xFF3E3E3E.toInt()
         }
     }
 

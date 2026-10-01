@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="player_title_size">20sp</dimen>
+    <dimen name="player_artist_size">16sp</dimen>
+    <dimen name="player_controls_spacing">4dp</dimen>
+</resources>

@@ -1,316 +1,146 @@
 package com.sumi.jamplay
 
+import android.content.Intent
+import android.graphics.Color
+import android.graphics.drawable.GradientDrawable
+import android.os.Build
 import android.os.Bundle
-import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
-import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.tween
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.WindowInsetsSides
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBarsPadding
-import androidx.compose.foundation.layout.offset
-import androidx.compose.foundation.layout.only
-import androidx.compose.foundation.layout.safeDrawing
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.List
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.Icon
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.NavigationBarItemDefaults
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.graphics.toArgb
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
+import androidx.core.graphics.ColorUtils
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.isVisible
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.NavController
-import androidx.navigation.NavHostController
-import androidx.navigation.NavType
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
-import androidx.navigation.compose.currentBackStackEntryAsState
-import androidx.navigation.compose.rememberNavController
-import androidx.navigation.navArgument
-import com.sumi.jamplay.ui.player.MiniPlayerScreen
-import com.sumi.jamplay.ui.player.PlayerScreen
+import androidx.navigation.fragment.NavHostFragment
+import androidx.navigation.navOptions
+import androidx.navigation.ui.setupWithNavController
+import coil.load
+import com.sumi.jamplay.databinding.ActivityMainBinding
 import com.sumi.jamplay.ui.player.PlayerViewModel
-import com.sumi.jamplay.ui.playlist.PlaylistDetailScreen
-import com.sumi.jamplay.ui.playlist.PlaylistScreen
-import com.sumi.jamplay.ui.playlist.PlaylistSelectScreen
-import com.sumi.jamplay.ui.playlist.PlaylistViewModel
-import com.sumi.jamplay.ui.search.SearchScreen
-import com.sumi.jamplay.ui.search.SearchViewViewModel
-import com.sumi.jamplay.ui.theme.JamPlayBackground
-import com.sumi.jamplay.ui.theme.JamPlayTheme
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.launch
+import kotlin.math.hypot
 
 @AndroidEntryPoint
-class MainActivity : ComponentActivity() {
-
+class MainActivity : AppCompatActivity() {
+    private lateinit var binding: ActivityMainBinding
+    private lateinit var navController: NavController
     private val playerViewModel: PlayerViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        val navigateToPlayer = savedInstanceState == null && intent?.getBooleanExtra("navigate_to_player", false) == true
-
         enableEdgeToEdge(
-            statusBarStyle = SystemBarStyle.dark(
-                Color.Transparent.toArgb()
-            ),
-            navigationBarStyle = SystemBarStyle.dark(
-                Color.Transparent.toArgb()
-            )
+            statusBarStyle = SystemBarStyle.dark(Color.TRANSPARENT),
+            navigationBarStyle = SystemBarStyle.dark(Color.TRANSPARENT)
         )
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            window.isNavigationBarContrastEnforced = false
+        }
+        binding = ActivityMainBinding.inflate(layoutInflater)
+        setContentView(binding.root)
+        ViewCompat.setOnApplyWindowInsetsListener(binding.root) { view, insets ->
+            val safe = insets.getInsets(
+                WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout()
+            )
+            val ime = insets.getInsets(WindowInsetsCompat.Type.ime())
+            view.setPadding(safe.left, safe.top, safe.right, maxOf(safe.bottom, ime.bottom))
+            WindowInsetsCompat.CONSUMED
+        }
+        ViewCompat.requestApplyInsets(binding.root)
 
-        setContent {
-            JamPlayTheme {
-                val navController = rememberNavController()
-                MainScreen(navController, playerViewModel)
-                LaunchedEffect(navigateToPlayer) {
-                    if (navigateToPlayer) {
-                        navController.navigate("player")
-                    }
-                }
+        val navHost = supportFragmentManager.findFragmentById(R.id.nav_host) as NavHostFragment
+        navController = navHost.navController
+        binding.bottomNavigation.setupWithNavController(navController)
+        navController.addOnDestinationChangedListener { _, destination, _ ->
+            binding.bottomNavigation.isVisible = destination.id == R.id.playlist || destination.id == R.id.search
+            updateMiniPlayerVisibility()
+            updatePlayerBackground()
+        }
+        binding.root.addOnLayoutChangeListener { _, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom ->
+            if (right - left != oldRight - oldLeft || bottom - top != oldBottom - oldTop) {
+                updatePlayerBackground()
             }
+        }
+        binding.miniPlayer.root.setOnClickListener { openPlayer() }
+        binding.miniPlayer.playPause.setOnClickListener { playerViewModel.togglePlayPause() }
+        observePlayback()
+        if (savedInstanceState == null) handlePlayerIntent(intent)
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        handlePlayerIntent(intent)
+    }
+
+    private fun handlePlayerIntent(intent: Intent) {
+        if (intent.getBooleanExtra("navigate_to_player", false)) openPlayer()
+    }
+
+    private fun openPlayer() {
+        navController.navigate(R.id.player, null, navOptions { launchSingleTop = true })
+    }
+
+    private fun updateMiniPlayerVisibility() {
+        val destination = navController.currentDestination?.id
+        val supported = destination == R.id.playlist || destination == R.id.search || destination == R.id.playlist_detail
+        binding.miniPlayer.root.isVisible = supported && playerViewModel.currentTrack.value != null
+    }
+
+    private fun updatePlayerBackground() {
+        if (navController.currentDestination?.id != R.id.player) {
+            binding.root.setBackgroundColor(ContextCompat.getColor(this, R.color.jamplay_background))
+            return
+        }
+        val colors = intArrayOf(
+            ColorUtils.compositeColors(0x66000000, playerViewModel.vibrantColor.value),
+            ColorUtils.compositeColors(0x66000000, playerViewModel.lightVibrantColor.value)
+        )
+        // Activity 배경은 시스템 바 뒤까지 이어지고, 콘텐츠는 기존 inset 안에 배치한다.
+        binding.root.background = GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, colors).apply {
+            gradientType = GradientDrawable.RADIAL_GRADIENT
+            gradientRadius = (hypot(binding.root.width.toFloat(), binding.root.height.toFloat()) / 2).coerceAtLeast(1f)
         }
     }
 
-}
-
-@Composable
-fun MainScreen(navController: NavHostController, playerViewModel: PlayerViewModel) {
-    val searchViewModel: SearchViewViewModel = hiltViewModel()
-    val playlistViewModel: PlaylistViewModel = hiltViewModel()
-
-    val navBackStackEntry by navController.currentBackStackEntryAsState()
-    val currentDestination = navBackStackEntry?.destination?.route
-
-    val showBottomNavigation = currentDestination == "playlist" || currentDestination == "search"
-    val showMiniPlayer = showBottomNavigation || currentDestination == "playlistDetail/{playlistId}"
-
-    Scaffold(
-        modifier = Modifier.fillMaxSize()
-            .background(JamPlayBackground)
-            .windowInsetsPadding(
-                WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal)
-            ),
-        bottomBar = {
-            if (showMiniPlayer) {
-                Column(
-                    modifier = if (showBottomNavigation) Modifier else Modifier.navigationBarsPadding()
-                ) {
-                    MiniPlayerScreen(
-                        viewModel = playerViewModel
-                    ) {
-                        // 클릭 시 PlayerScreen으로 전환
-                        navController.navigate("player") {
-                            launchSingleTop = true
+    private fun observePlayback() {
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                launch {
+                    playerViewModel.currentTrack.collect { track ->
+                        updateMiniPlayerVisibility()
+                        binding.miniPlayer.trackName.text = track?.name
+                        binding.miniPlayer.artistName.text = track?.artistName
+                        binding.miniPlayer.artwork.load(track?.artworkUrl)
+                    }
+                }
+                launch {
+                    playerViewModel.isPlaying.collect { playing ->
+                        binding.miniPlayer.playPause.apply {
+                            setImageResource(if (playing) R.drawable.ic_pause else R.drawable.ic_play)
+                            contentDescription = getString(if (playing) R.string.pause else R.string.play)
                         }
                     }
-                    if (showBottomNavigation) {
-                        BottomNavigationBar(navController)
+                }
+                launch {
+                    combine(playerViewModel.vibrantColor, playerViewModel.lightVibrantColor) { first, second ->
+                        intArrayOf(first, second)
+                    }.collect { colors ->
+                        binding.miniPlayer.root.background = GradientDrawable(
+                            GradientDrawable.Orientation.LEFT_RIGHT, colors
+                        ).apply { cornerRadius = 12 * resources.displayMetrics.density }
+                        updatePlayerBackground()
                     }
                 }
             }
         }
-    ) { padding ->
-        NavHost(
-            navController = navController,
-            startDestination = "playlist",
-            modifier = Modifier.background(Color.Transparent)
-        ) {
-            composable("playlist") {
-                PlaylistScreen(
-                    padding = padding,
-                    playlistViewModel = playlistViewModel,
-                    onPlaylistClick = { playlistId ->
-                        navController.navigate("playlistDetail/$playlistId")
-                    }
-                )
-            }
-            composable("search") {
-                SearchScreen(
-                    padding = padding,
-                    searchViewModel = searchViewModel,
-                    playerViewModel = playerViewModel,
-                    onTrackClick = { track, trackList ->
-                        playerViewModel.play(track, trackList)
-                        navController.navigate("player")
-                    }
-                )
-            }
-            composable("player") {
-                PlayerScreen(
-                    padding = padding,
-                    playerViewModel = playerViewModel,
-                    playlistViewModel = playlistViewModel,
-                    onAddToPlaylist = { navController.navigate("playlistSelect") },
-                    onBack = { navController.popBackStack() }
-                )
-            }
-            composable("playlistSelect") {
-                PlaylistSelectScreen(
-                    padding = padding,
-                    playlistViewModel = playlistViewModel,
-                    playerViewModel = playerViewModel,
-                    onBack = { navController.popBackStack() }
-                )
-            }
-            composable(
-                "playlistDetail/{playlistId}",
-                arguments = listOf(navArgument("playlistId") { type = NavType.LongType })
-            ) { backStackEntry ->
-                val playlistId = backStackEntry.arguments?.getLong("playlistId") ?: 0L
-                var initialized by rememberSaveable { mutableStateOf(false) }
-
-                LaunchedEffect(playlistId) {
-                    if (!initialized) {
-                        playlistViewModel.setPlaylistId(playlistId)
-                        initialized = true
-                    }
-                }
-                PlaylistDetailScreen(
-                    padding = padding,
-                    playlistViewModel = playlistViewModel,
-                    playerViewModel = playerViewModel,
-                    onTrackClick = { track, trackList ->
-                        playerViewModel.play(track, trackList)
-                        navController.navigate("player")
-                    },
-                    onBack = {
-                        navController.popBackStack()
-                    }
-                )
-            }
-        }
     }
 }
-
-@Composable
-fun BottomNavigationBar(navController: NavController) {
-    val items = listOf(
-        BottomNavItem(stringResource(R.string.playlist_title), "playlist", Icons.AutoMirrored.Filled.List),
-        BottomNavItem(stringResource(R.string.search_title), "search", Icons.Default.Search),
-    )
-
-    NavigationBar(
-        modifier = Modifier
-            .drawBehind {
-                // 맨 윗줄 구분선
-                drawLine(
-                    color = Color.White.copy(alpha = 0.4f),
-                    start = Offset(0f, 0f),
-                    end = Offset(size.width, 0f),
-                    strokeWidth = 1.dp.toPx()
-                )
-            },
-        containerColor = JamPlayBackground,
-        tonalElevation = 0.dp
-    ) {
-        val navBackStackEntry by navController.currentBackStackEntryAsState()
-        val currentDestination = navBackStackEntry?.destination?.route
-
-        items.forEach { item ->
-            val selected = currentDestination == item.route
-            val scale by animateFloatAsState(
-                targetValue = if (selected) 1.15f else 1f,
-                animationSpec = spring(dampingRatio = 0.5f, stiffness = 200f)
-            )
-            val indicatorAlpha by animateFloatAsState(
-                targetValue = if (selected) 1f else 0f,
-                animationSpec = tween(300)
-            )
-
-            NavigationBarItem(
-                selected = selected,
-                onClick = {
-                    navController.navigate(item.route) {
-                        popUpTo("playlist") { saveState = true }
-                        launchSingleTop = true
-                        restoreState = true
-                    }
-                },
-                icon = {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(
-                            imageVector = item.icon,
-                            contentDescription = item.label,
-                            modifier = Modifier.graphicsLayer(
-                                scaleX = scale,
-                                scaleY = scale
-                            ),
-                            tint = if (selected)
-                                Color.White
-                            else
-                                Color.White.copy(alpha = 0.6f)
-                        )
-                        if (indicatorAlpha > 0f) {
-                            Box(
-                                modifier = Modifier
-                                    .align(Alignment.BottomCenter)
-                                    .offset(y = 6.dp)
-                                    .height(2.dp)
-                                    .width(18.dp)
-                                    .alpha(indicatorAlpha)
-                                    .background(
-                                        Brush.horizontalGradient(
-                                            listOf(Color(0xFF9B6BFF), Color(0xFF4B1F9C))
-                                        ),
-                                        RoundedCornerShape(1.dp)
-                                    )
-                            )
-                        }
-                    }
-                },
-                label = {
-                    Text(
-                        item.label,
-                        color = if (selected) Color.White else Color.White.copy(alpha = 0.5f),
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Medium
-                    )
-                },
-                colors = NavigationBarItemDefaults.colors(
-                    indicatorColor = Color.Transparent,
-                    selectedIconColor = Color.White,
-                    unselectedIconColor = Color.White.copy(alpha = 0.6f),
-                    selectedTextColor = Color.White,
-                    unselectedTextColor = Color.White.copy(alpha = 0.5f)
-                )
-            )
-        }
-    }
-}
-
-data class BottomNavItem(val label: String, val route: String, val icon: ImageVector)

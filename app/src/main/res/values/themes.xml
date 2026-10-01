@@ -1,5 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <style name="Theme.FlowPlay" parent="Theme.Material3.Dark.NoActionBar">
+        <item name="android:windowBackground">@color/jamplay_background</item>
+        <item name="colorPrimary">@color/jamplay_purple</item>
+        <item name="colorOnPrimary">@android:color/white</item>
+        <item name="colorSurface">@color/jamplay_surface</item>
+        <item name="colorOnSurface">@android:color/white</item>
+        <item name="android:windowLightStatusBar">false</item>
+    </style>
 
-    <style name="Theme.FlowPlay" parent="android:Theme.Material.Light.NoActionBar" />
+    <style name="ThemeOverlay.JamPlay.PlaylistDialog" parent="ThemeOverlay.Material3.MaterialAlertDialog">
+        <item name="buttonBarPositiveButtonStyle">@style/Widget.JamPlay.DialogButton</item>
+        <item name="buttonBarNegativeButtonStyle">@style/Widget.JamPlay.DialogButton</item>
+    </style>
+
+    <style name="Widget.JamPlay.DialogButton" parent="Widget.Material3.Button.TextButton.Dialog">
+        <item name="android:textColor">@android:color/white</item>
+        <item name="rippleColor">#26FFFFFF</item>
+    </style>
 </resources>

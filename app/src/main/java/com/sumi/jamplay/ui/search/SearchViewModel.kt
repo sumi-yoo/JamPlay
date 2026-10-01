@@ -1,8 +1,5 @@
 package com.sumi.jamplay.ui.search
 
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.paging.Pager
@@ -26,7 +23,7 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
-class SearchViewViewModel @Inject constructor(
+class SearchViewModel @Inject constructor(
     private val repository: TrackRepository,
     private val searchHistoryRepository: SearchHistoryRepository
 ) : ViewModel() {
@@ -58,9 +55,6 @@ class SearchViewViewModel @Inject constructor(
             emptyList()
         )
 
-    var acceptsClicks by mutableStateOf(true)
-        private set
-
     init {
         // 초기 화면에서 "" 검색
         viewModelScope.launch {
@@ -73,9 +67,10 @@ class SearchViewViewModel @Inject constructor(
     }
 
     fun search() {
+        val query = _text.value
         viewModelScope.launch {
-            _query.emit(_text.value)
-            if (_text.value.isNotEmpty()) searchHistoryRepository.addSearch(_text.value)
+            _query.emit(query)
+            if (query.isNotEmpty()) searchHistoryRepository.addSearch(query)
         }
     }
 
@@ -83,7 +78,4 @@ class SearchViewViewModel @Inject constructor(
         if (_isSearching.value != value) _isSearching.value = value
     }
 
-    fun enableClicks() { acceptsClicks = true }
-
-    fun disableClicks() { acceptsClicks = false }
 }

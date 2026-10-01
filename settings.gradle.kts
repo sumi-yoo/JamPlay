@@ -22,3 +22,4 @@ dependencyResolutionManagement {
 rootProject.name = "JamPlay"
 include(":app")
 include(":domain")
+include(":data")

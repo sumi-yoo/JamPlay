@@ -65,6 +65,7 @@ android {
 
 dependencies {
     implementation(project(":domain"))
+    implementation(project(":data"))
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
@@ -77,8 +78,6 @@ dependencies {
     implementation("com.squareup.retrofit2:retrofit:2.9.0")
     // Gson 컨버터 (JSON 자동 파싱용)
     implementation("com.squareup.retrofit2:converter-gson:2.9.0")
-    // Preferences DataStore (Key-Value 저장용)
-    implementation("androidx.datastore:datastore-preferences:1.1.1")
     // XML 화면 및 Fragment 내비게이션
     implementation("androidx.appcompat:appcompat:1.7.0")
     implementation("androidx.fragment:fragment-ktx:1.8.5")
@@ -100,12 +99,8 @@ dependencies {
     kapt("com.google.dagger:hilt-android-compiler:2.50")
     // room
     implementation("androidx.room:room-runtime:2.7.0-alpha07")
-    implementation("androidx.room:room-ktx:2.7.0-alpha07")
-    kapt("androidx.room:room-compiler:2.7.0-alpha07")
     // media
     implementation("androidx.media:media:1.6.0")
-    // serialization
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
     implementation("androidx.palette:palette-ktx:1.0.0")
 }
 
